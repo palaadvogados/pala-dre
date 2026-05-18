@@ -1,0 +1,15 @@
+{
+  "name": "pala-dre",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:api": "pnpm --filter @pala-dre/api dev",
+    "dev:web": "pnpm --filter @pala-dre/web dev",
+    "build": "pnpm -r build",
+    "db:migrate": "pnpm --filter @pala-dre/db migrate",
+    "db:seed": "pnpm --filter @pala-dre/db seed"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

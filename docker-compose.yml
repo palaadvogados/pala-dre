@@ -1,0 +1,26 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - DATABASE_URL=postgres://atendimento:08b322d9cfe1312e1708a695c4ce85cb5573003509056e55@72.60.155.16:55432/pala_dre?sslmode=disable
+      - USE_MOCK=false
+      - CLICKUP_API_KEY=pk_81986334_NO1A9WO9LVJK6BHLWH9SPMVPMRIXQM8L
+      - CLICKUP_LIST_PAGAR=901321718675
+      - CLICKUP_LIST_RECEBER=901321718692
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:3003
+    depends_on:
+      - api
+    restart: unless-stopped
