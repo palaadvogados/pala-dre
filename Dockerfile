@@ -3,6 +3,7 @@ WORKDIR /app
 RUN npm install -g pnpm@9
 COPY . .
 RUN pnpm install --frozen-lockfile
+RUN pnpm add -w @swc/core @swc/register
 ENV NODE_ENV=production
 EXPOSE 3003
-CMD ["npx", "tsx", "apps/api/src/main.ts"]
+CMD ["node", "--require", "@swc/register", "apps/api/src/main.ts"]
