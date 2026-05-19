@@ -3,8 +3,12 @@ WORKDIR /app
 RUN npm install -g pnpm@9
 COPY . .
 RUN pnpm install --frozen-lockfile
+ENV NEXT_PUBLIC_API_URL=http://jkkod8856yyzthx3k84gpzm9.177.7.53.96.sslip.io
 RUN cd apps/web && npx next build
+RUN cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static 2>/dev/null || true
+RUN cp -r apps/web/public apps/web/.next/standalone/apps/web/public 2>/dev/null || true
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 EXPOSE 3000
 CMD ["node", "apps/web/.next/standalone/apps/web/server.js"]
