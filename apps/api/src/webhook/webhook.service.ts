@@ -205,14 +205,19 @@ export class WebhookService {
         }
 
         if (!RELEVANT_LISTS.has(task.list?.id)) {
+          // Task saiu das lists Pagar/Receber: remove o lançamento pra não virar fantasma no DRE.
+          const removed = await deleteEntryByClickupTaskId(taskId)
           await logWebhook(event, taskId, task.list?.id, payload, true, null)
-          return { action: "irrelevant_list", taskId }
+          return { action: removed ? "removed_irrelevant_list" : "irrelevant_list", taskId }
         }
 
         const entryData = await this.buildEntryFromTask(task)
         if (!entryData) {
-          await logWebhook(event, taskId, task.list?.id, payload, false, "missing_fields")
-          return { action: "missing_fields", taskId }
+          // Perdeu um campo obrigatório (valor/conta zerados): remove o lançamento antigo
+          // em vez de deixá-lo desatualizado no banco.
+          const removed = await deleteEntryByClickupTaskId(taskId)
+          await logWebhook(event, taskId, task.list?.id, payload, true, "missing_fields")
+          return { action: removed ? "removed_missing_fields" : "missing_fields", taskId }
         }
 
         await upsertEntry(entryData)
