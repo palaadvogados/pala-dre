@@ -27,6 +27,8 @@ export interface DbEntry {
     clickup_list_id: string | null;
     cost_center_code: string | null;
     entry_type: string | null;
+    period_caixa: string | null;
+    effective_period?: string;
     created_at: string;
     updated_at: string;
 }
@@ -81,6 +83,7 @@ export interface UpsertEntryData {
     clickup_list_id?: string | null;
     cost_center_code?: string | null;
     entry_type?: string | null;
+    period_caixa?: string | null;
 }
 export declare function upsertEntry(data: UpsertEntryData): Promise<DbEntry>;
 export declare function deleteEntryBySourceId(sourceId: string): Promise<boolean>;

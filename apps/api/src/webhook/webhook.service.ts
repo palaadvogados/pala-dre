@@ -17,6 +17,7 @@ const CF_CODIGO_CONTA = "e0f014cb"
 const CF_VALOR = "bda5b321"
 const CF_CONTA_BANCARIA = "e60521eb"
 const CF_FORMA_PAGAMENTO = "3f0d314a"
+const CF_DATA_PAGAMENTO = "df602102" // "Data Pagamento/Recebimento" (date) → regime de caixa
 
 interface ClickUpCustomField {
   id: string
@@ -113,7 +114,8 @@ export class WebhookService {
   }
 
   private extractField(task: ClickUpTask, fieldId: string): ClickUpCustomField | undefined {
-    return task.custom_fields.find((f) => f.id === fieldId)
+    // Constantes usam o prefixo do UUID; a API retorna o id completo.
+    return task.custom_fields.find((f) => f.id === fieldId || f.id.startsWith(fieldId))
   }
 
   private async buildEntryFromTask(task: ClickUpTask): Promise<UpsertEntryData | null> {
@@ -145,6 +147,12 @@ export class WebhookService {
     const bank = contaBancariaField ? extractDropdownValue(contaBancariaField) : null
     const paymentMethod = formaPagField ? extractDropdownValue(formaPagField) : null
 
+    // Data da baixa efetiva → regime de caixa. Vazia = ainda não paga/recebida (fora do caixa).
+    const dataPagField = this.extractField(task, CF_DATA_PAGAMENTO)
+    const periodCaixa = dataPagField?.value != null
+      ? dueDateToPeriod(String(dataPagField.value))
+      : null
+
     return {
       account_code: accountCode,
       period,
@@ -157,6 +165,7 @@ export class WebhookService {
       source_id: `clickup-${task.id}`,
       clickup_task_id: task.id,
       clickup_list_id: task.list?.id ?? null,
+      period_caixa: periodCaixa,
     }
   }
 

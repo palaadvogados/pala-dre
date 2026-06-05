@@ -11,15 +11,16 @@ export async function getEntriesByPeriod(period) {
 export async function getEntriesByPeriodRange(periodFrom, periodTo, costCenters, analysisType) {
     const fromDate = periodFrom + "-01";
     const toDate = periodTo + "-01";
+    // Regime caixa filtra pela data da baixa (period_caixa); competência pelo vencimento (period).
+    // periodCol é controlado internamente (não vem do usuário) — sem risco de injection.
+    const periodCol = analysisType === "caixa" ? "period_caixa" : "period";
     const params = [fromDate, toDate];
-    let sql = "SELECT * FROM dre_entries WHERE DATE_TRUNC('month', period) >= DATE_TRUNC('month', $1::date) AND DATE_TRUNC('month', period) <= DATE_TRUNC('month', $2::date)";
+    // No regime caixa, linhas sem period_caixa (não pagas) caem fora do range automaticamente,
+    // pois DATE_TRUNC(NULL) é NULL e a comparação vira falsa.
+    let sql = `SELECT *, ${periodCol} AS effective_period FROM dre_entries WHERE DATE_TRUNC('month', ${periodCol}) >= DATE_TRUNC('month', $1::date) AND DATE_TRUNC('month', ${periodCol}) <= DATE_TRUNC('month', $2::date)`;
     if (costCenters && costCenters.length > 0) {
         params.push(costCenters);
         sql += ` AND cost_center_code = ANY($${params.length}::text[])`;
-    }
-    if (analysisType) {
-        params.push(analysisType);
-        sql += ` AND entry_type = $${params.length}`;
     }
     sql += " ORDER BY created_at";
     const result = await pool.query(sql, params);
@@ -60,8 +61,8 @@ export async function getBudgetByPeriodRange(periodFrom, periodTo, costCenters) 
     return result.rows;
 }
 export async function upsertEntry(data) {
-    const result = await pool.query(`INSERT INTO dre_entries (account_code, period, amount, description, client, project, bank, payment_method, status, source, source_id, clickup_task_id, clickup_list_id, cost_center_code, entry_type, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
+    const result = await pool.query(`INSERT INTO dre_entries (account_code, period, amount, description, client, project, bank, payment_method, status, source, source_id, clickup_task_id, clickup_list_id, cost_center_code, entry_type, period_caixa, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW())
      ON CONFLICT (source_id) DO UPDATE SET
        account_code = EXCLUDED.account_code,
        period = EXCLUDED.period,
@@ -76,6 +77,7 @@ export async function upsertEntry(data) {
        clickup_list_id = EXCLUDED.clickup_list_id,
        cost_center_code = EXCLUDED.cost_center_code,
        entry_type = EXCLUDED.entry_type,
+       period_caixa = EXCLUDED.period_caixa,
        updated_at = NOW()
      RETURNING *`, [
         data.account_code,
@@ -93,6 +95,7 @@ export async function upsertEntry(data) {
         data.clickup_list_id ?? null,
         data.cost_center_code ?? null,
         data.entry_type ?? null,
+        data.period_caixa ?? null,
     ]);
     return result.rows[0];
 }
