@@ -17,7 +17,6 @@ export interface FetchDreOptions {
   categories?: string[]
   costCenter?: string[]
   analysisType?: "caixa" | "competencia"
-  showBudget?: boolean
 }
 
 export async function fetchDre(options: FetchDreOptions): Promise<DreResponse> {
@@ -29,7 +28,6 @@ export async function fetchDre(options: FetchDreOptions): Promise<DreResponse> {
   if (options.categories && options.categories.length > 0) params.set("categories", options.categories.join(","))
   if (options.costCenter && options.costCenter.length > 0) params.set("costCenter", options.costCenter.join(","))
   if (options.analysisType) params.set("analysisType", options.analysisType)
-  if (options.showBudget) params.set("showBudget", "true")
   const res = await fetch(`${BASE}/api/dre?${params}`)
   if (!res.ok) {
     const body = await res.text()

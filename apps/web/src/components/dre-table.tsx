@@ -12,7 +12,6 @@ interface DreTableProps {
   comparativeLabel?: string
   nivel: number
   hasActiveFilter?: boolean
-  showBudget?: boolean
   onDrillDown?: (code: string) => void
 }
 
@@ -34,13 +33,12 @@ function flattenRows(rows: DreRow[], maxLevel: number): DreRow[] {
 interface DreRowComponentProps {
   row: DreRow
   hasComparative: boolean
-  showBudget?: boolean
   onDrillDown?: (code: string) => void
 }
 
-function DreRowComponent({ row, hasComparative, showBudget, onDrillDown }: DreRowComponentProps) {
+function DreRowComponent({ row, hasComparative, onDrillDown }: DreRowComponentProps) {
   if (row.lineType === "separator") {
-    const colCount = 4 + (hasComparative ? 3 : 0) + (showBudget ? 3 : 0)
+    const colCount = 4 + (hasComparative ? 3 : 0)
     return (
       <TableRow className="h-2 pointer-events-none">
         <TableCell colSpan={colCount} className="py-0 bg-muted/10" />
@@ -120,20 +118,6 @@ function DreRowComponent({ row, hasComparative, showBudget, onDrillDown }: DreRo
           </TableCell>
         </>
       )}
-
-      {showBudget && (
-        <>
-          <TableCell className={cn("text-right tabular-nums min-w-[140px] text-sm", valueColor(row.budgetValue ?? 0))}>
-            {row.budgetValue !== undefined ? formatBRL(row.budgetValue) : "-"}
-          </TableCell>
-          <TableCell className={cn("text-right tabular-nums min-w-[140px] text-sm", valueColor(row.budgetVariance ?? 0))}>
-            {row.budgetVariance !== undefined ? formatBRL(row.budgetVariance) : "-"}
-          </TableCell>
-          <TableCell className={cn("text-right tabular-nums min-w-[70px] text-sm", ahColor(row.budgetVariancePercent))}>
-            {row.budgetVariancePercent !== undefined ? formatAH(row.budgetVariancePercent) : "-"}
-          </TableCell>
-        </>
-      )}
     </TableRow>
   )
 }
@@ -145,13 +129,17 @@ export function DreTable({
   comparativeLabel,
   nivel,
   hasActiveFilter,
-  showBudget,
   onDrillDown,
 }: DreTableProps) {
   const flatRows = useMemo(() => {
-    const all = flattenRows(rows, nivel)
-    if (!hasActiveFilter) return all
-    return all.filter((r) => {
+    // As linhas vêm planas do backend (cada conta é uma row com indentLevel 0,1,2...).
+    // O nível controla a profundidade exibida: Nivel 1 = indentLevel 0, Nivel 2 = 0 e 1, etc.
+    const byLevel = flattenRows(rows, nivel).filter((r) => {
+      if (r.lineType === "separator") return true
+      return (r.indentLevel ?? r.level ?? 0) < nivel
+    })
+    if (!hasActiveFilter) return byLevel
+    return byLevel.filter((r) => {
       if (r.lineType === "separator") return true
       if (r.lineType === "header") return true
       if (KEY_CODES.has(r.code)) return true
@@ -189,13 +177,6 @@ export function DreTable({
                 <TableHead className="text-right min-w-[70px]">AH%</TableHead>
               </>
             )}
-            {showBudget && (
-              <>
-                <TableHead className="text-right min-w-[140px]">Orcado</TableHead>
-                <TableHead className="text-right min-w-[140px]">Variacao</TableHead>
-                <TableHead className="text-right min-w-[70px]">Var%</TableHead>
-              </>
-            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -204,7 +185,6 @@ export function DreTable({
               key={`${row.code}-${idx}`}
               row={row}
               hasComparative={hasComparative}
-              showBudget={showBudget}
               onDrillDown={onDrillDown}
             />
           ))}

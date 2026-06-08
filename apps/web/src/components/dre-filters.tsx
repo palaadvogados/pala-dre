@@ -17,7 +17,6 @@ interface DreFiltersProps {
   costCenters: string[]
   availableCostCenters: DreCostCenter[]
   analysisType: "caixa" | "competencia"
-  showBudget: boolean
   onPeriodChange: (value: string) => void
   onPeriodFromChange: (value: string) => void
   onPeriodToChange: (value: string) => void
@@ -27,7 +26,6 @@ interface DreFiltersProps {
   onCategoriesChange: (value: string[]) => void
   onCostCentersChange: (value: string[]) => void
   onAnalysisTypeChange: (value: "caixa" | "competencia") => void
-  onShowBudgetChange: (value: boolean) => void
 }
 
 const COMPARATIVE_OPTIONS = [
@@ -326,7 +324,6 @@ export function DreFilters({
   costCenters,
   availableCostCenters,
   analysisType,
-  showBudget,
   onPeriodChange,
   onPeriodFromChange,
   onPeriodToChange,
@@ -336,7 +333,6 @@ export function DreFilters({
   onCategoriesChange,
   onCostCentersChange,
   onAnalysisTypeChange,
-  onShowBudgetChange,
 }: DreFiltersProps) {
   const isRange = viewMode === "acumulado" || viewMode === "multi-periodo"
   const isMulti = viewMode === "multi-periodo"
@@ -427,23 +423,6 @@ export function DreFilters({
           options={availableCategories}
           onChange={onCategoriesChange}
         />
-      )}
-
-      {!isMulti && (
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Orcado</label>
-          <button
-            type="button"
-            onClick={() => onShowBudgetChange(!showBudget)}
-            className={`flex h-9 min-w-[80px] items-center justify-center rounded-md border px-3 text-xs font-medium transition-colors ${
-              showBudget
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-input bg-background text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            {showBudget ? "Ativo" : "Inativo"}
-          </button>
-        </div>
       )}
     </div>
   )

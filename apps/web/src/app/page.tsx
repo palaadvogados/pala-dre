@@ -65,7 +65,6 @@ export default function DashboardPage() {
   const [categories, setCategories] = useState<string[]>([])
   const [costCenters, setCostCenters] = useState<string[]>([])
   const [analysisType, setAnalysisType] = useState<"caixa" | "competencia">("caixa")
-  const [showBudget, setShowBudget] = useState(false)
 
   const { data: categoriesData } = useDreCategories()
   const { data: costCentersData } = useDreCostCenters()
@@ -81,7 +80,6 @@ export default function DashboardPage() {
         categories: categories.length > 0 ? categories : undefined,
         costCenter: costCenters.length > 0 ? costCenters : undefined,
         analysisType,
-        showBudget,
       }
     : {
         period,
@@ -89,7 +87,6 @@ export default function DashboardPage() {
         categories: categories.length > 0 ? categories : undefined,
         costCenter: costCenters.length > 0 ? costCenters : undefined,
         analysisType,
-        showBudget,
       }
 
   const { data, isLoading, error } = useDreData(isMulti ? { period: "2026-01" } : dreOptions)
@@ -142,7 +139,6 @@ export default function DashboardPage() {
               costCenters={costCenters}
               availableCostCenters={costCentersData?.costCenters ?? []}
               analysisType={analysisType}
-              showBudget={showBudget}
               onPeriodChange={setPeriod}
               onPeriodFromChange={setPeriodFrom}
               onPeriodToChange={setPeriodTo}
@@ -152,7 +148,6 @@ export default function DashboardPage() {
               onCategoriesChange={setCategories}
               onCostCentersChange={setCostCenters}
               onAnalysisTypeChange={setAnalysisType}
-              onShowBudgetChange={setShowBudget}
             />
             <a
               href={exportUrl}
@@ -207,7 +202,6 @@ export default function DashboardPage() {
                     comparativeLabel={comparativeLabel}
                     nivel={nivel}
                     hasActiveFilter={categories.length > 0 || costCenters.length > 0}
-                    showBudget={showBudget}
                     onDrillDown={setDrillCode}
                   />
                 </section>
