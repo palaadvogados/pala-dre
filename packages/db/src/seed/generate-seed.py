@@ -193,9 +193,10 @@ def main():
     for i, e in enumerate(entries, 1):
         period_date = e["period"] + "-01"
         source_id = f"mock-{i}"
+        # Regime caixa: mock assume baixa no proprio mes de competencia (period_caixa = period).
         lines.append(
-            f"INSERT INTO dre_entries (account_code, period, amount, description, source, source_id) "
-            f"VALUES ({escape_sql(e['code'])}, '{period_date}', {e['amount']:.2f}, {escape_sql(e['desc'])}, 'mock', {escape_sql(source_id)}) "
+            f"INSERT INTO dre_entries (account_code, period, amount, description, source, source_id, period_caixa) "
+            f"VALUES ({escape_sql(e['code'])}, '{period_date}', {e['amount']:.2f}, {escape_sql(e['desc'])}, 'mock', {escape_sql(source_id)}, '{period_date}') "
             f"ON CONFLICT (source_id) DO NOTHING;"
         )
 
