@@ -276,7 +276,7 @@ let DreService = DreService_1 = class DreService {
         return rows.map((r) => ({
             id: r.id,
             accountCode: r.account_code,
-            period: r.period,
+            period: r.effective_period ?? r.period,
             amount: parseFloat(r.amount),
             description: r.description,
             source: r.source,
@@ -290,7 +290,7 @@ let DreService = DreService_1 = class DreService {
         return rows.map((r) => ({
             id: r.id,
             accountCode: r.account_code,
-            period: r.period,
+            period: r.effective_period ?? r.period,
             amount: parseFloat(r.amount),
             description: r.description,
             source: r.source,

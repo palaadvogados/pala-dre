@@ -15,6 +15,7 @@ const CF_CODIGO_CONTA = "e0f014cb";
 const CF_VALOR = "bda5b321";
 const CF_CONTA_BANCARIA = "e60521eb";
 const CF_FORMA_PAGAMENTO = "3f0d314a";
+const CF_DATA_PAGAMENTO = "df602102"; // "Data Pagamento/Recebimento" (date) → regime de caixa
 function extractDropdownValue(field) {
     if (!field.value && field.value !== 0)
         return null;
@@ -52,7 +53,8 @@ let WebhookService = WebhookService_1 = class WebhookService {
     async resolveAccountCode(dropdownValue) {
         if (!dropdownValue)
             return null;
-        const codeMatch = dropdownValue.match(/^([\d.]+)\s*[-–]/);
+        // Aceita "1.1.1.02 - Nome" e também o código puro "1.1.1.02" (formato atual do dropdown).
+        const codeMatch = dropdownValue.match(/^([\d.]+)\s*(?:[-–]|$)/);
         if (codeMatch?.[1])
             return codeMatch[1];
         if (!this.accountCodeCache) {
@@ -83,7 +85,8 @@ let WebhookService = WebhookService_1 = class WebhookService {
         }
     }
     extractField(task, fieldId) {
-        return task.custom_fields.find((f) => f.id === fieldId);
+        // Constantes usam o prefixo do UUID; a API retorna o id completo.
+        return task.custom_fields.find((f) => f.id === fieldId || f.id.startsWith(fieldId));
     }
     async buildEntryFromTask(task) {
         const codigoField = this.extractField(task, CF_CODIGO_CONTA);
@@ -108,6 +111,11 @@ let WebhookService = WebhookService_1 = class WebhookService {
         }
         const bank = contaBancariaField ? extractDropdownValue(contaBancariaField) : null;
         const paymentMethod = formaPagField ? extractDropdownValue(formaPagField) : null;
+        // Data da baixa efetiva → regime de caixa. Vazia = ainda não paga/recebida (fora do caixa).
+        const dataPagField = this.extractField(task, CF_DATA_PAGAMENTO);
+        const periodCaixa = dataPagField?.value != null
+            ? dueDateToPeriod(String(dataPagField.value))
+            : null;
         return {
             account_code: accountCode,
             period,
@@ -120,6 +128,7 @@ let WebhookService = WebhookService_1 = class WebhookService {
             source_id: `clickup-${task.id}`,
             clickup_task_id: task.id,
             clickup_list_id: task.list?.id ?? null,
+            period_caixa: periodCaixa,
         };
     }
     async processWebhook(payload) {
@@ -152,13 +161,18 @@ let WebhookService = WebhookService_1 = class WebhookService {
                     return { action: "fetch_failed", taskId };
                 }
                 if (!RELEVANT_LISTS.has(task.list?.id)) {
+                    // Task saiu das lists Pagar/Receber: remove o lançamento pra não virar fantasma no DRE.
+                    const removed = await deleteEntryByClickupTaskId(taskId);
                     await logWebhook(event, taskId, task.list?.id, payload, true, null);
-                    return { action: "irrelevant_list", taskId };
+                    return { action: removed ? "removed_irrelevant_list" : "irrelevant_list", taskId };
                 }
                 const entryData = await this.buildEntryFromTask(task);
                 if (!entryData) {
-                    await logWebhook(event, taskId, task.list?.id, payload, false, "missing_fields");
-                    return { action: "missing_fields", taskId };
+                    // Perdeu um campo obrigatório (valor/conta zerados): remove o lançamento antigo
+                    // em vez de deixá-lo desatualizado no banco.
+                    const removed = await deleteEntryByClickupTaskId(taskId);
+                    await logWebhook(event, taskId, task.list?.id, payload, true, "missing_fields");
+                    return { action: removed ? "removed_missing_fields" : "missing_fields", taskId };
                 }
                 await upsertEntry(entryData);
                 await logWebhook(event, taskId, task.list?.id, payload, true, null);
