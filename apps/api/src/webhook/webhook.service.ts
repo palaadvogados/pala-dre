@@ -78,7 +78,8 @@ export class WebhookService {
   private async resolveAccountCode(dropdownValue: string | null): Promise<string | null> {
     if (!dropdownValue) return null
 
-    const codeMatch = dropdownValue.match(/^([\d.]+)\s*[-–]/)
+    // Aceita "1.1.1.02 - Nome" e também o código puro "1.1.1.02" (formato atual do dropdown).
+    const codeMatch = dropdownValue.match(/^([\d.]+)\s*(?:[-–]|$)/)
     if (codeMatch?.[1]) return codeMatch[1]
 
     if (!this.accountCodeCache) {
